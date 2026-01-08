@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>摆摊数据记录器（纯前端）</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --muted:#a9b3d1;
+      --text:#e9eeff;
+      --line:rgba(255,255,255,.08);
+      --good:#3ddc97;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --btn:#2b3a77;
+      --btn2:#1d2850;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC","Noto Sans CJK SC","Microsoft YaHei", Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(61,220,151,.15), transparent 60%),
+                  radial-gradient(1000px 600px at 100% 20%, rgba(92,123,255,.18), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:18px 16px 10px;
+      border-bottom:1px solid var(--line);
+      position:sticky; top:0;
+      backdrop-filter: blur(10px);
+      background: rgba(11,16,32,.7);
+      z-index:10;
+    }
+    header h1{margin:0;font-size:18px;letter-spacing:.4px}
+    header .sub{margin-top:6px;color:var(--muted);font-size:12px;display:flex;gap:10px;flex-wrap:wrap}
+    main{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:14px}
+    .grid{display:grid;gap:14px;grid-template-columns:1fr}
+    @media(min-width:980px){
+      .grid{grid-template-columns:1.2fr .8fr}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row.space{justify-content:space-between}
+    .pill{
+      padding:6px 10px;border:1px solid var(--line);border-radius:999px;
+      color:var(--muted);font-size:12px
+    }
+    .btn{
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(92,123,255,.28), rgba(43,58,119,.38));
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+      transition:.15s transform,.15s opacity;
+      user-select:none;
+    }
+    .btn:active{transform:scale(.98);opacity:.9}
+    .btn.secondary{background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03))}
+    .btn.danger{background: linear-gradient(180deg, rgba(255,107,107,.22), rgba(255,107,107,.12))}
+    .btn.good{background: linear-gradient(180deg, rgba(61,220,151,.22), rgba(61,220,151,.12))}
+    .btn.small{padding:8px 10px;border-radius:10px;font-size:12px}
+    .kpi{
+      display:grid;gap:12px;grid-template-columns:repeat(3,1fr);
+    }
+    .kpi .box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background: rgba(0,0,0,.12);
+      min-height:84px;
+    }
+    .kpi .label{color:var(--muted);font-size:12px}
+    .kpi .value{font-size:28px;font-weight:800;margin-top:6px}
+    .kpi .hint{margin-top:4px;color:var(--muted);font-size:12px}
+    .divider{height:1px;background:var(--line);margin:12px 0}
+    .form{
+      display:grid;gap:10px;
+      grid-template-columns:1fr;
+    }
+    @media(min-width:720px){
+      .form{grid-template-columns:1fr 1fr}
+    }
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input, select, textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid var(--line);
+      padding:10px 10px;
+      background: rgba(0,0,0,.2);
+      color: var(--text);
+      outline:none;
+    }
+    textarea{min-height:70px;resize:vertical}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      overflow:hidden;
+      border-radius:12px;
+      border:1px solid var(--line);
+    }
+    th, td{
+      padding:10px 10px;
+      border-bottom:1px solid var(--line);
+      vertical-align:top;
+    }
+    th{
+      text-align:left;
+      color:var(--muted);
+      font-weight:700;
+      background: rgba(0,0,0,.18);
+      position:sticky; top:0;
+    }
+    tr:hover td{background: rgba(255,255,255,.03)}
+    .tag{
+      font-size:12px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      white-space:nowrap;
+    }
+    .tag.good{border-color:rgba(61,220,151,.35);color:#b9ffe3}
+    .tag.warn{border-color:rgba(255,204,102,.35);color:#ffe7b5}
+    .tag.bad{border-color:rgba(255,107,107,.35);color:#ffc3c3}
+    .muted{color:var(--muted)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .foot{
+      color:var(--muted);
+      font-size:12px;
+      padding:0 2px;
+      line-height:1.5;
+    }
+    canvas{width:100%;height:150px;background:rgba(0,0,0,.12);border:1px solid var(--line);border-radius:14px}
+  </style>
+</head>
+<body>
+<header>
+  <h1>摆摊数据记录器（纯前端 / GitHub Pages 可用）</h1>
+  <div class="sub">
+    <span class="pill">本机离线可用 · 自动保存</span>
+    <span class="pill">时间戳 + 导出 CSV/JSON</span>
+    <span class="pill" id="nowPill">—</span>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- 左：核心记录 -->
+    <section class="card">
+      <div class="row space">
+        <div>
+          <div class="muted" style="font-size:12px">当前场次</div>
+          <div style="font-size:16px;font-weight:800;margin-top:4px" id="sessionTitle">—</div>
+        </div>
+        <div class="row">
+          <button class="btn small secondary" id="newSessionBtn">新建场次</button>
+          <button class="btn small secondary" id="renameSessionBtn">重命名</button>
+          <button class="btn small danger" id="endSessionBtn">结束场次</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="kpi">
+        <div class="box">
+          <div class="label">人流量（路过）</div>
+          <div class="value" id="kpiTraffic">0</div>
+          <div class="hint">咨询率：<span id="askRate">0%</span></div>
+        </div>
+        <div class="box">
+          <div class="label">咨询人数（问产品）</div>
+          <div class="value" id="kpiAsk">0</div>
+          <div class="hint">成交率：<span id="buyRate">0%</span></div>
+        </div>
+        <div class="box">
+          <div class="label">成交人数（买了）</div>
+          <div class="value" id="kpiBuy">0</div>
+          <div class="hint">客单：<span id="aov">—</span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="gap:12px">
+        <button class="btn" id="addTrafficBtn">+1 路过</button>
+        <button class="btn secondary" id="addAskBtn">+1 咨询</button>
+        <button class="btn good" id="addBuyBtn">+1 成交</button>
+        <button class="btn secondary" id="undoBtn" title="撤销最近一次记录">撤销</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="margin:0 0 10px;font-size:14px">添加一条详细记录（可选）</h3>
+      <div class="form">
+        <div>
+          <label>类型</label>
+          <select id="eventType">
+            <option value="traffic">路过</option>
+            <option value="ask">咨询</option>
+            <option value="buy">成交</option>
+          </select>
+        </div>
+        <div>
+          <label>商品/关键词（可选）</label>
+          <input id="eventItem" placeholder="例如：抱枕 / 椅子 / 9.9引流款" />
+        </div>
+        <div>
+          <label>金额（成交可填，可选）</label>
+          <input id="eventAmount" type="number" inputmode="decimal" placeholder="例如：99" />
+        </div>
+        <div>
+          <label>支付方式（可选）</label>
+          <select id="eventPay">
+            <option value="">不记录</option>
+            <option value="wx">微信</option>
+            <option value="ali">支付宝</option>
+            <option value="cash">现金</option>
+            <option value="card">刷卡</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label>备注（可选）</label>
+          <textarea id="eventNote" placeholder="例如：问了材质、对比了别家价格、说回去考虑"></textarea>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="addDetailBtn">记录一条（带时间戳）</button>
+        <button class="btn secondary" id="clearFormBtn">清空</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="margin:0 0 10px;font-size:14px">简单趋势（本场次）</h3>
+      <canvas id="spark"></canvas>
+      <div class="foot" style="margin-top:8px">
+        提示：这个趋势图是把记录按时间顺序绘制出来（路过/咨询/成交分别一条线），不依赖任何第三方库。
+      </div>
+    </section>
+
+    <!-- 右：列表、导出、管理 -->
+    <aside class="card">
+      <div class="row space">
+        <h3 style="margin:0;font-size:14px">记录列表</h3>
+        <div class="row">
+          <button class="btn small secondary" id="exportCsvBtn">导出 CSV</button>
+          <button class="btn small secondary" id="exportJsonBtn">导出 JSON</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row space" style="align-items:flex-end">
+        <div style="flex:1;min-width:220px">
+          <label>筛选（类型）</label>
+          <select id="filterType">
+            <option value="all">全部</option>
+            <option value="traffic">路过</option>
+            <option value="ask">咨询</option>
+            <option value="buy">成交</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:220px">
+          <label>关键词（商品/备注）</label>
+          <input id="filterKw" placeholder="输入关键词筛选" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="max-height:420px;overflow:auto;border-radius:12px">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:86px">类型</th>
+              <th style="width:150px">时间</th>
+              <th>内容</th>
+              <th style="width:84px">金额</th>
+              <th style="width:70px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row space">
+        <div class="foot">
+          <div>数据保存在你的浏览器本地（localStorage）。</div>
+          <div>换电脑/清缓存会丢失，建议定期导出 CSV/JSON 备份。</div>
+        </div>
+        <button class="btn small danger" id="wipeAllBtn">清空全部数据</button>
+      </div>
+    </aside>
+  </div>
+
+  <section class="card">
+    <h3 style="margin:0 0 8px;font-size:14px">你后续可以加的功能（留接口）</h3>
+    <div class="foot">
+      1) 加“天气/温度/地点”字段（影响人流与转化）；
+      2) 加“时段按钮”（例如早/中/晚）；
+      3) 加“引流渠道”（路过、抖音、朋友介绍等）；
+      4) 加“库存/补货提醒”；
+      5) 加“日/周/月报表汇总页面”。
+    </div>
+  </section>
+</main>
+
+<script>
+/**
+ * 摆摊数据记录器 - 单文件纯前端
+ * 数据结构：
+ * state = {
+ *   sessions: [{id, name, startAt, endAt|null}],
+ *   currentSessionId: string,
+ *   events: [{id, sessionId, type, ts, item, amount, pay, note}]
+ * }
+ */
+(function(){
+  const LS_KEY = "stall_tracker_state_v1";
+
+  const $ = (id)=>document.getElementById(id);
+
+  const nowPill = $("nowPill");
+  const sessionTitle = $("sessionTitle");
+
+  const kpiTraffic = $("kpiTraffic");
+  const kpiAsk = $("kpiAsk");
+  const kpiBuy = $("kpiBuy");
+  const askRate = $("askRate");
+  const buyRate = $("buyRate");
+  const aov = $("aov");
+
+  const tbody = $("tbody");
+  const filterType = $("filterType");
+  const filterKw = $("filterKw");
+
+  const eventType = $("eventType");
+  const eventItem = $("eventItem");
+  const eventAmount = $("eventAmount");
+  const eventPay = $("eventPay");
+  const eventNote = $("eventNote");
+
+  const spark = $("spark");
+  const ctx = spark.getContext("2d");
+
+  function uid(){
+    return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+  }
+
+  function fmt(ts){
+    const d = new Date(ts);
+    const pad = (n)=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  function safeNum(x){
+    const n = Number(x);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){
+      console.warn("load failed", e);
+      return null;
+    }
+  }
+
+  function save(){
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  }
+
+  function ensureDefault(){
+    if(state.sessions.length===0){
+      const sid = uid();
+      state.sessions.push({
+        id:sid,
+        name:`场次 ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString().slice(0,5)}`,
+        startAt: Date.now(),
+        endAt: null
+      });
+      state.currentSessionId = sid;
+      save();
+    }
+    if(!state.currentSessionId || !state.sessions.find(s=>s.id===state.currentSessionId)){
+      state.currentSessionId = state.sessions[state.sessions.length-1].id;
+      save();
+    }
+  }
+
+  function currentSession(){
+    return state.sessions.find(s=>s.id===state.currentSessionId);
+  }
+
+  function addEvent(type, {item="", amount=null, pay="", note=""}={}){
+    const session = currentSession();
+    if(!session) return;
+
+    const ev = {
+      id: uid(),
+      sessionId: session.id,
+      type,
+      ts: Date.now(),
+      item: item.trim(),
+      amount: amount===null ? null : amount,
+      pay,
+      note: note.trim()
+    };
+    state.events.push(ev);
+    save();
+    render();
+  }
+
+  function removeEvent(id){
+    const idx = state.events.findIndex(e=>e.id===id);
+    if(idx>=0){
+      state.events.splice(idx,1);
+      save();
+      render();
+    }
+  }
+
+  function undoLast(){
+    const sessionId = state.currentSessionId;
+    const idx = [...state.events].reverse().findIndex(e=>e.sessionId===sessionId);
+    if(idx===-1) return;
+    const realIdx = state.events.length - 1 - idx;
+    state.events.splice(realIdx,1);
+    save();
+    render();
+  }
+
+  function countsForSession(sessionId){
+    const events = state.events.filter(e=>e.sessionId===sessionId);
+    const traffic = events.filter(e=>e.type==="traffic").length;
+    const ask = events.filter(e=>e.type==="ask").length;
+    const buy = events.filter(e=>e.type==="buy").length;
+    const buyAmounts = events.filter(e=>e.type==="buy" && typeof e.amount==="number");
+    const revenue = buyAmounts.reduce((s,e)=>s+e.amount,0);
+    return {traffic, ask, buy, revenue, buyWithAmount: buyAmounts.length, total: events.length, events};
+  }
+
+  function rate(num, den){
+    if(den<=0) return "0%";
+    return (num/den*100).toFixed(1) + "%";
+  }
+
+  function renderKPI(){
+    const session = currentSession();
+    if(!session){
+      sessionTitle.textContent = "—";
+      kpiTraffic.textContent = "0";
+      kpiAsk.textContent = "0";
+      kpiBuy.textContent = "0";
+      askRate.textContent = "0%";
+      buyRate.textContent = "0%";
+      aov.textContent = "—";
+      return;
+    }
+    const {traffic, ask, buy, revenue, buyWithAmount} = countsForSession(session.id);
+    sessionTitle.textContent = `${session.name}${session.endAt ? "（已结束）" : ""}`;
+    kpiTraffic.textContent = String(traffic);
+    kpiAsk.textContent = String(ask);
+    kpiBuy.textContent = String(buy);
+    askRate.textContent = rate(ask, traffic);
+    buyRate.textContent = rate(buy, ask);
+    if(buyWithAmount>0){
+      aov.textContent = (revenue / buyWithAmount).toFixed(2);
+    }else{
+      aov.textContent = "—";
+    }
+  }
+
+  function typeTag(type){
+    if(type==="traffic") return `<span class="tag bad">路过</span>`;
+    if(type==="ask") return `<span class="tag warn">咨询</span>`;
+    if(type==="buy") return `<span class="tag good">成交</span>`;
+    return `<span class="tag">未知</span>`;
+  }
+
+  function filteredEvents(){
+    const sessionId = state.currentSessionId;
+    let list = state.events.filter(e=>e.sessionId===sessionId);
+    const t = filterType.value;
+    const kw = filterKw.value.trim().toLowerCase();
+    if(t!=="all") list = list.filter(e=>e.type===t);
+    if(kw){
+      list = list.filter(e=>{
+        const hay = `${e.item||""} ${e.note||""}`.toLowerCase();
+        return hay.includes(kw);
+      });
+    }
+    // newest first
+    list.sort((a,b)=>b.ts-a.ts);
+    return list;
+  }
+
+  function renderTable(){
+    const list = filteredEvents();
+    tbody.innerHTML = list.map(e=>{
+      const content = [
+        e.item ? `<div><span class="muted">商品：</span>${escapeHtml(e.item)}</div>` : "",
+        e.note ? `<div><span class="muted">备注：</span>${escapeHtml(e.note)}</div>` : "",
+        e.pay ? `<div><span class="muted">支付：</span>${escapeHtml(payLabel(e.pay))}</div>` : ""
+      ].filter(Boolean).join("");
+
+      const amount = (typeof e.amount==="number") ? e.amount.toFixed(2) : "";
+      return `
+        <tr>
+          <td>${typeTag(e.type)}</td>
+          <td class="mono">${fmt(e.ts)}</td>
+          <td>${content || `<span class="muted">—</span>`}</td>
+          <td class="mono">${amount}</td>
+          <td><button class="btn small danger" data-del="${e.id}">删</button></td>
+        </tr>
+      `;
+    }).join("") || `
+      <tr><td colspan="5" class="muted" style="padding:14px">暂无记录。你可以用上面的 +1 按钮快速记，或者用“详细记录”写商品/备注。</td></tr>
+    `;
+
+    // bind delete
+    tbody.querySelectorAll("[data-del]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = btn.getAttribute("data-del");
+        if(confirm("确定删除这条记录？")) removeEvent(id);
+      });
+    });
+  }
+
+  function payLabel(v){
+    if(v==="wx") return "微信";
+    if(v==="ali") return "支付宝";
+    if(v==="cash") return "现金";
+    if(v==="card") return "刷卡";
+    if(v==="other") return "其他";
+    return v || "";
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function renderSpark(){
+    // 画三条线：traffic/ask/buy 的累计曲线
+    const session = currentSession();
+    const W = spark.width = spark.clientWidth * devicePixelRatio;
+    const H = spark.height = 150 * devicePixelRatio;
+
+    ctx.clearRect(0,0,W,H);
+
+    // frame
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, 1, 1, W-2, H-2, 20);
+    ctx.stroke();
+
+    if(!session) return;
+
+    const {events} = countsForSession(session.id);
+    const ordered = [...events].sort((a,b)=>a.ts-b.ts);
+    if(ordered.length<2){
+      // hint
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.font = `${12*devicePixelRatio}px ui-monospace, monospace`;
+      ctx.fillText("记录太少，先多记几条看看趋势～", 14*devicePixelRatio, 36*devicePixelRatio);
+      return;
+    }
+
+    let cT=0,cA=0,cB=0;
+    const pointsT=[], pointsA=[], pointsB=[];
+    const t0 = ordered[0].ts;
+    const t1 = ordered[ordered.length-1].ts;
+    const span = Math.max(1, t1 - t0);
+
+    // first pass: counts + collect
+    for(const e of ordered){
+      if(e.type==="traffic") cT++;
+      if(e.type==="ask") cA++;
+      if(e.type==="buy") cB++;
+      const x = (e.ts - t0)/span;
+      pointsT.push([x,cT]);
+      pointsA.push([x,cA]);
+      pointsB.push([x,cB]);
+    }
+    const maxY = Math.max(cT,cA,cB,1);
+
+    const pad = 14*devicePixelRatio;
+    const plotW = W - pad*2;
+    const plotH = H - pad*2;
+
+    function toXY(p){
+      const [x,y]=p;
+      return [pad + x*plotW, pad + (1 - y/maxY)*plotH];
+    }
+
+    // grid lines
+    ctx.strokeStyle = "rgba(255,255,255,.06)";
+    ctx.lineWidth = 1;
+    for(let i=1;i<=3;i++){
+      const yy = pad + (i/4)*plotH;
+      ctx.beginPath();
+      ctx.moveTo(pad, yy);
+      ctx.lineTo(W-pad, yy);
+      ctx.stroke();
+    }
+
+    // three lines with different alpha (no custom colors rule only applies to python plots; here we can)
+    drawLine(pointsT, "rgba(255,107,107,.85)");
+    drawLine(pointsA, "rgba(255,204,102,.9)");
+    drawLine(pointsB, "rgba(61,220,151,.9)");
+
+    // legend
+    ctx.font = `${12*devicePixelRatio}px ui-monospace, monospace`;
+    legend( "路过",  "rgba(255,107,107,.85)", 14);
+    legend( "咨询",  "rgba(255,204,102,.9)",  66);
+    legend( "成交",  "rgba(61,220,151,.9)",  118);
+
+    function legend(text,color,dx){
+      ctx.fillStyle = color;
+      ctx.fillRect((pad+dx)*devicePixelRatio*0 + dx*devicePixelRatio, (H - 16*devicePixelRatio), 10*devicePixelRatio, 10*devicePixelRatio);
+      ctx.fillStyle = "rgba(255,255,255,.75)";
+      ctx.fillText(text, (dx+14)*devicePixelRatio, H - 6*devicePixelRatio);
+    }
+
+    function drawLine(pts, color){
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2*devicePixelRatio;
+      ctx.beginPath();
+      pts.forEach((p,i)=>{
+        const [x,y]=toXY(p);
+        if(i===0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
+  }
+
+  function roundRect(ctx, x, y, w, h, r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.arcTo(x+w,y, x+w,y+h, rr);
+    ctx.arcTo(x+w,y+h, x,y+h, rr);
+    ctx.arcTo(x,y+h, x,y, rr);
+    ctx.arcTo(x,y, x+w,y, rr);
+    ctx.closePath();
+  }
+
+  function render(){
+    renderKPI();
+    renderTable();
+    renderSpark();
+  }
+
+  function tickNow(){
+    nowPill.textContent = "当前时间：" + fmt(Date.now());
+  }
+
+  function newSession(){
+    const name = prompt("给新场次取个名字：", `场次 ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString().slice(0,5)}`);
+    if(name===null) return;
+    const sid = uid();
+    state.sessions.push({id:sid, name:name.trim()||"未命名场次", startAt:Date.now(), endAt:null});
+    state.currentSessionId = sid;
+    save();
+    render();
+  }
+
+  function renameSession(){
+    const s = currentSession();
+    if(!s) return;
+    const name = prompt("重命名当前场次：", s.name);
+    if(name===null) return;
+    s.name = name.trim() || s.name;
+    save();
+    render();
+  }
+
+  function endSession(){
+    const s = currentSession();
+    if(!s) return;
+    if(confirm("结束当前场次？结束后仍可查看/导出，但建议新建下一场。")){
+      s.endAt = Date.now();
+      save();
+      render();
+    }
+  }
+
+  function exportJson(){
+    const payload = {
+      exportedAt: Date.now(),
+      state
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    downloadBlob(blob, `stall-data-${new Date().toISOString().slice(0,10)}.json`);
+  }
+
+	function exportCsv(){
+	  const session = currentSession();
+	  if(!session) return;
+
+	  const list = state.events
+		.filter(e=>e.sessionId===session.id)
+		.sort((a,b)=>a.ts-b.ts);
+
+	  const header = ["sessionName","sessionId","type","time","item","amount","pay","note"];
+	  const rows = list.map(e=>[
+		session.name,
+		session.id,
+		e.type,
+		fmt(e.ts),
+		e.item||"",
+		(typeof e.amount==="number") ? e.amount : "",
+		payLabel(e.pay)||"",
+		e.note||""
+	  ]);
+
+	  // ✅ 用 CRLF 更兼容 Excel
+	  const csv = [header, ...rows].map(r=>r.map(csvCell).join(",")).join("\r\n");
+
+	  // ✅ 关键：加 UTF-8 BOM，Excel 才会按 UTF-8 打开
+	  const BOM = "\uFEFF";
+	  const blob = new Blob([BOM + csv], {type:"text/csv;charset=utf-8"});
+
+	  downloadBlob(blob, `stall-events-${new Date().toISOString().slice(0,10)}.csv`);
+	}
+
+
+
+  function csvCell(v){
+    const s = String(v ?? "");
+    if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+    return s;
+  }
+
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function wipeAll(){
+    if(!confirm("⚠️ 清空全部数据（所有场次+记录）？此操作不可恢复。")) return;
+    localStorage.removeItem(LS_KEY);
+    state = defaultState();
+    ensureDefault();
+    render();
+  }
+
+  function defaultState(){
+    return {sessions:[], currentSessionId:"", events:[]};
+  }
+
+  // init
+  let state = load() || defaultState();
+  ensureDefault();
+  render();
+  tickNow();
+  setInterval(tickNow, 1000);
+
+  // buttons
+  $("addTrafficBtn").addEventListener("click", ()=>addEvent("traffic"));
+  $("addAskBtn").addEventListener("click", ()=>addEvent("ask"));
+  $("addBuyBtn").addEventListener("click", ()=>addEvent("buy"));
+  $("undoBtn").addEventListener("click", undoLast);
+
+  $("addDetailBtn").addEventListener("click", ()=>{
+    const type = eventType.value;
+    const item = eventItem.value;
+    const amount = eventAmount.value==="" ? null : safeNum(eventAmount.value);
+    const pay = eventPay.value;
+    const note = eventNote.value;
+    addEvent(type, {item, amount, pay, note});
+  });
+  $("clearFormBtn").addEventListener("click", ()=>{
+    eventItem.value=""; eventAmount.value=""; eventPay.value=""; eventNote.value="";
+  });
+
+  filterType.addEventListener("change", renderTable);
+  filterKw.addEventListener("input", renderTable);
+
+  $("newSessionBtn").addEventListener("click", newSession);
+  $("renameSessionBtn").addEventListener("click", renameSession);
+  $("endSessionBtn").addEventListener("click", endSession);
+
+  $("exportJsonBtn").addEventListener("click", exportJson);
+  $("exportCsvBtn").addEventListener("click", exportCsv);
+
+  $("wipeAllBtn").addEventListener("click", wipeAll);
+
+  // responsive canvas
+  window.addEventListener("resize", ()=>renderSpark());
+
+})();
+</script>
+</body>
+</html>
